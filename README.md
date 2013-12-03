@@ -49,7 +49,7 @@ To show or hide the SideMenu, call the toggle menu method of the sideMenu.
 
 ```objective-c
 [self toggleMenu];
-``
+```
 
 ## Other propeties
 
