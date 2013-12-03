@@ -24,15 +24,13 @@ All you need to do is drop 'EMSideMenu' files into your project, and add `#inclu
 Create a view controller which inherits from EMSideMenu, this will act as the container for the content and the menu. That's all for a basic use case! 
 
 To change or add a new view as the current content view one of two methods.
-
-1.   
+   
 ```objective-c
 - (void)replaceContentWithView:(UIView *)newView;
 ```
 
 This will add the newView parameter to the content view or
 
-2.  
 ```objective-c
 - (void)replaceContentWithViewController:(UIViewController *)newController;
 ```
