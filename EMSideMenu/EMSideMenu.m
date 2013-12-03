@@ -53,6 +53,24 @@ const CGFloat kMaxBackgroundScale = 1.7;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    if (!self.sideMenuContainer) {
+        self.sideMenuContainer = [[UIView alloc] initWithFrame:self.view.bounds];
+        [self.view addSubview:self.sideMenuContainer];
+        self.sideMenuContainer.backgroundColor = [UIColor yellowColor];
+    }
+    
+    if (!self.contentView) {
+        self.contentView = [[UIView alloc] initWithFrame:self.view.bounds];
+        self.contentView.backgroundColor = [UIColor redColor];
+        [self.view insertSubview:self.contentView aboveSubview:self.sideMenuContainer];
+    }
+    
+    if (!self.contentContainer) {
+        self.contentContainer = [[UIView alloc] initWithFrame:self.view.bounds];
+        [self.contentView addSubview:self.contentContainer];
+    }
+    
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(contentPan:)];
     pan.delegate = self;
     pan.cancelsTouchesInView = NO;
