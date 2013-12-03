@@ -49,6 +49,6 @@ To show or hide the SideMenu, call the toggle menu method of the sideMenu.
 [self toggleMenu];
 ```
 
-## Other propeties
+## Other properties
 
 * Shadow - This is toggled using the shadowOn property. Does what it says on the tin.
