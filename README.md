@@ -21,29 +21,36 @@ All you need to do is drop 'EMSideMenu' files into your project, and add `#inclu
 
 ## Example Usage
 
-Create a root or main view controller which will act as the container for the content and the menu, this view controller should inherit from EMSideMenu. To set the content view use either:
+Create a view controller which inherits from EMSideMenu, this will act as the container for the content and the menu. That's all for a basic use case! 
 
+To change or add a new view as the current content view one of two methods.
+
+1.   
 ```objective-c
 - (void)replaceContentWithView:(UIView *)newView;
 ```
 
-or
+This will add the newView parameter to the content view or
 
+2.  
 ```objective-c
 - (void)replaceContentWithViewController:(UIViewController *)newController;
 ```
 
-depending on your preferred set up.
+which will take the view property for the newController and set it as the content view, this also adds the viewController as a child view controller to the EMSideMenu.
 
-To add the Side Menu to the container add it as a subview to the EMSideMenu's attribute, example:
+To add the Side Menu to the container add it as a subview to the EMSideMenu's attribute or replace it entirely, example:
 
 ```objective-c
  [self.sideMenuContainer addSubview:menuViewController.view];
 ```
 
-finally to show or hide the SideMenu, call the toggle menu method of the sideMenu
+To show or hide the SideMenu, call the toggle menu method of the sideMenu.
 
 ```objective-c
 [self toggleMenu];
-```
+``
 
+## Other propeties
+
+* Shadow - This is toggled using the shadowOn property. Does what it says on the tin.
