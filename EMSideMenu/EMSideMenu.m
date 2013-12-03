@@ -182,6 +182,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
 }
 
 - (void)replaceContentWithView:(UIView *)newView {
+    [self initialiseViews];
     // set up an animation for the transition between the views
     CATransition *animation = [CATransition animation];
     [animation setDuration:0.5];
