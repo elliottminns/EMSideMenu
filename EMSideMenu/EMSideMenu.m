@@ -86,13 +86,15 @@ const CGFloat kMaxBackgroundScale = 1.7;
     [super viewDidLayoutSubviews];
     [self.view layoutSubviews];
     
-    self.contentContainer.layer.shadowColor = [[UIColor blackColor] CGColor];
-    self.contentContainer.layer.shadowOffset = CGSizeMake(0, 0);
-    self.contentContainer.layer.shadowRadius = 100.0f;
-    self.contentContainer.layer.shadowOpacity = 1.0;
-    self.contentContainer.layer.masksToBounds = NO;
-    self.contentContainer.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.contentContainer.bounds].CGPath;
-    
+    if (self.shadowsOn) {
+        self.contentContainer.layer.shadowColor = [[UIColor blackColor] CGColor];
+        self.contentContainer.layer.shadowOffset = CGSizeMake(0, 0);
+        self.contentContainer.layer.shadowRadius = 100.0f;
+        self.contentContainer.layer.shadowOpacity = 1.0;
+        self.contentContainer.layer.masksToBounds = NO;
+        self.contentContainer.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.contentContainer.bounds].CGPath;
+        self.contentContainer.layer.zPosition = 300;
+    }
     [self.view sendSubviewToBack:self.backgroundView];
     self.sideMenuContainer.layer.zPosition = -1000;
     self.backgroundView.layer.zPosition = -1010;
@@ -160,6 +162,11 @@ const CGFloat kMaxBackgroundScale = 1.7;
         default:
             break;
     }
+}
+
+- (void)setShadowsOn:(BOOL)shadowsOn {
+    _shadowsOn = shadowsOn;
+    [self.view setNeedsDisplay];
 }
 
 - (void)presentModalViewController:(UIViewController *)modalController {
