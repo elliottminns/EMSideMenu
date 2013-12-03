@@ -53,23 +53,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-    if (!self.sideMenuContainer) {
-        self.sideMenuContainer = [[UIView alloc] initWithFrame:self.view.bounds];
-        [self.view addSubview:self.sideMenuContainer];
-        self.sideMenuContainer.backgroundColor = [UIColor yellowColor];
-    }
-    
-    if (!self.contentView) {
-        self.contentView = [[UIView alloc] initWithFrame:self.view.bounds];
-        self.contentView.backgroundColor = [UIColor redColor];
-        [self.view insertSubview:self.contentView aboveSubview:self.sideMenuContainer];
-    }
-    
-    if (!self.contentContainer) {
-        self.contentContainer = [[UIView alloc] initWithFrame:self.view.bounds];
-        [self.contentView addSubview:self.contentContainer];
-    }
+    [self initialiseViews];
     
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(contentPan:)];
     pan.delegate = self;
@@ -105,13 +89,35 @@ const CGFloat kMaxBackgroundScale = 1.7;
     self.contentContainer.layer.shadowColor = [[UIColor blackColor] CGColor];
     self.contentContainer.layer.shadowOffset = CGSizeMake(0, 0);
     self.contentContainer.layer.shadowRadius = 100.0f;
-    self.contentContainer.layer.shadowOpacity = 3.0;
+    self.contentContainer.layer.shadowOpacity = 1.0;
     self.contentContainer.layer.masksToBounds = NO;
-    self.contentContainer.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.contentView.bounds].CGPath;
+    self.contentContainer.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.contentContainer.bounds].CGPath;
     
     [self.view sendSubviewToBack:self.backgroundView];
     self.sideMenuContainer.layer.zPosition = -1000;
     self.backgroundView.layer.zPosition = -1010;
+}
+
+- (void)initialiseViews {
+    if (!self.sideMenuContainer) {
+        self.sideMenuContainer = [[UIView alloc] initWithFrame:self.view.bounds];
+        self.sideMenuContainer.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
+        self.sideMenuContainer.backgroundColor = [UIColor yellowColor];
+        [self.view addSubview:self.sideMenuContainer];
+    }
+    
+    if (!self.contentView) {
+        self.contentView = [[UIView alloc] initWithFrame:self.view.bounds];
+        self.contentView.backgroundColor = [UIColor redColor];
+        self.contentView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
+        [self.view insertSubview:self.contentView aboveSubview:self.sideMenuContainer];
+    }
+    
+    if (!self.contentContainer) {
+        self.contentContainer = [[UIView alloc] initWithFrame:self.view.bounds];
+        self.contentContainer.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
+        [self.contentView addSubview:self.contentContainer];
+    }
 }
 
 - (void)showMenuView:(NSTimeInterval)duration {
