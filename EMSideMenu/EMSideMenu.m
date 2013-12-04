@@ -120,6 +120,15 @@ const CGFloat kMaxBackgroundScale = 1.7;
         self.contentContainer.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
         [self.contentView addSubview:self.contentContainer];
     }
+    
+    if (!self.backgroundView) {
+        self.backgroundView = [[UIView alloc] initWithFrame:self.view.bounds];
+        self.backgroundView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
+    }
+    
+    if (!self.backgroundView.superview) {
+        [self.view addSubview:self.backgroundView];
+    }
 }
 
 - (void)showMenuView:(NSTimeInterval)duration {
