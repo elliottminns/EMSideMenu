@@ -95,6 +95,10 @@ const CGFloat kMaxBackgroundScale = 1.7;
         self.contentContainer.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.contentContainer.bounds].CGPath;
         self.contentContainer.layer.zPosition = 300;
     }
+    
+    if (!self.backgroundView.superview) {
+        [self.view addSubview:self.backgroundView];
+    }
     [self.view sendSubviewToBack:self.backgroundView];
     self.sideMenuContainer.layer.zPosition = -1000;
     self.backgroundView.layer.zPosition = -1010;
@@ -128,6 +132,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
     
     if (!self.backgroundView.superview) {
         [self.view addSubview:self.backgroundView];
+        [self.view sendSubviewToBack:self.backgroundView];
     }
 }
 
@@ -335,6 +340,15 @@ const CGFloat kMaxBackgroundScale = 1.7;
 
 - (void)contentTap:(UITapGestureRecognizer *)gr {
     [self hideMenuView:kSlideAnimationDuration];
+}
+
+- (UIView *)backgroundView {
+    if (!_backgroundView) {
+        _backgroundView = [[UIView alloc] initWithFrame:self.view.frame];
+        _backgroundView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
+    }
+    
+    return _backgroundView;
 }
 
 @end
