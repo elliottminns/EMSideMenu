@@ -104,13 +104,13 @@ const CGFloat kMaxBackgroundScale = 1.7;
     if (!self.sideMenuContainer) {
         self.sideMenuContainer = [[UIView alloc] initWithFrame:self.view.bounds];
         self.sideMenuContainer.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
-        self.sideMenuContainer.backgroundColor = [UIColor yellowColor];
+        self.sideMenuContainer.backgroundColor = [UIColor clearColor];
         [self.view addSubview:self.sideMenuContainer];
     }
     
     if (!self.contentView) {
         self.contentView = [[UIView alloc] initWithFrame:self.view.bounds];
-        self.contentView.backgroundColor = [UIColor redColor];
+        self.contentView.backgroundColor = [UIColor clearColor];
         self.contentView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
         [self.view insertSubview:self.contentView aboveSubview:self.sideMenuContainer];
     }
@@ -335,14 +335,6 @@ const CGFloat kMaxBackgroundScale = 1.7;
 
 - (void)contentTap:(UITapGestureRecognizer *)gr {
     [self hideMenuView:kSlideAnimationDuration];
-}
-
-- (UIView *)backgroundView {
-    if (!_backgroundView) {
-        _backgroundView = [[UIView alloc] initWithFrame:self.view.frame];
-        _backgroundView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
-    }
-    return _backgroundView;
 }
 
 @end
