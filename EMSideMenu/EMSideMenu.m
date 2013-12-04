@@ -337,4 +337,12 @@ const CGFloat kMaxBackgroundScale = 1.7;
     [self hideMenuView:kSlideAnimationDuration];
 }
 
+- (UIView *)backgroundView {
+    if (!_backgroundView) {
+        _backgroundView = [[UIView alloc] initWithFrame:self.view.frame];
+        _backgroundView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
+    }
+    return _backgroundView;
+}
+
 @end
