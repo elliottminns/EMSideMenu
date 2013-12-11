@@ -210,6 +210,12 @@ const CGFloat kMaxBackgroundScale = 1.7;
     
     [self.contentContainer addSubview:newView];
     
+    // Add layout constraints to the view.
+    NSDictionary *views = NSDictionaryOfVariableBindings(newView);
+    newView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.contentContainer addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-0-[newView]-0-|" options:0 metrics:nil views:views]];
+    [self.contentContainer addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-0-[newView]-0-|" options:0 metrics:nil views:views]];
+    
     if (self.state == kStateMenu) {
         [self toggleMenu];
     }
