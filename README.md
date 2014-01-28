@@ -13,7 +13,11 @@ A configurable side menu for iOS
 
 ### Cocoapods
 
-Coming soon...
+To install via Cocoapods, add the following line to your Podfile.
+
+``
+pod 'EMSideMenu'
+``
 
 ### Manual Installation
 
