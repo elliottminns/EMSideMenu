@@ -40,6 +40,5 @@
 @property (nonatomic, strong) IBOutlet UIView *contentContainer, *sideMenuContainer;
 @property (nonatomic, strong) IBOutlet UIView *contentView;
 @property (nonatomic, strong) IBOutlet UIView *backgroundView;
-@property (nonatomic, assign) BOOL shadowsOn;
 
 @end

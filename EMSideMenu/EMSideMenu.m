@@ -53,8 +53,6 @@ const CGFloat kMaxBackgroundScale = 1.7;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self initialiseViews];
-    
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(contentPan:)];
     pan.delegate = self;
     pan.cancelsTouchesInView = NO;
@@ -86,53 +84,21 @@ const CGFloat kMaxBackgroundScale = 1.7;
     [super viewDidLayoutSubviews];
     [self.view layoutSubviews];
     
-    if (self.shadowsOn) {
-        self.contentContainer.layer.shadowColor = [[UIColor blackColor] CGColor];
-        self.contentContainer.layer.shadowOffset = CGSizeMake(0, 0);
-        self.contentContainer.layer.shadowRadius = 100.0f;
-        self.contentContainer.layer.shadowOpacity = 1.0;
-        self.contentContainer.layer.masksToBounds = NO;
-        self.contentContainer.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.contentContainer.bounds].CGPath;
-        self.contentContainer.layer.zPosition = 300;
-    }
+    self.contentContainer.layer.shadowColor = [[UIColor blackColor] CGColor];
+    self.contentContainer.layer.shadowOffset = CGSizeMake(0, 0);
+    self.contentContainer.layer.shadowRadius = 100.0f;
+    self.contentContainer.layer.shadowOpacity = 3.0;
+    self.contentContainer.layer.masksToBounds = NO;
+    self.contentContainer.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.contentView.bounds].CGPath;
     
-    if (!self.backgroundView.superview) {
-        [self.view addSubview:self.backgroundView];
-    }
     [self.view sendSubviewToBack:self.backgroundView];
     self.sideMenuContainer.layer.zPosition = -1000;
     self.backgroundView.layer.zPosition = -1010;
-}
-
-- (void)initialiseViews {
-    if (!self.sideMenuContainer) {
-        self.sideMenuContainer = [[UIView alloc] initWithFrame:self.view.bounds];
-        self.sideMenuContainer.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
-        self.sideMenuContainer.backgroundColor = [UIColor clearColor];
-        [self.view addSubview:self.sideMenuContainer];
-    }
     
-    if (!self.contentView) {
-        self.contentView = [[UIView alloc] initWithFrame:self.view.bounds];
-        self.contentView.backgroundColor = [UIColor clearColor];
-        self.contentView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
-        [self.view insertSubview:self.contentView aboveSubview:self.sideMenuContainer];
-    }
-    
-    if (!self.contentContainer) {
-        self.contentContainer = [[UIView alloc] initWithFrame:self.view.bounds];
-        self.contentContainer.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
-        [self.contentView addSubview:self.contentContainer];
-    }
-    
-    if (!self.backgroundView) {
-        self.backgroundView = [[UIView alloc] initWithFrame:self.view.bounds];
-        self.backgroundView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
-    }
-    
-    if (!self.backgroundView.superview) {
-        [self.view addSubview:self.backgroundView];
-        [self.view sendSubviewToBack:self.backgroundView];
+    if (self.state == kStateMenu) {
+        CGRect frame = self.originFramePosition;
+        frame.origin.x += kMaxXTranslation;
+        self.contentView.frame = frame;
     }
 }
 
@@ -178,11 +144,6 @@ const CGFloat kMaxBackgroundScale = 1.7;
     }
 }
 
-- (void)setShadowsOn:(BOOL)shadowsOn {
-    _shadowsOn = shadowsOn;
-    [self.view setNeedsDisplay];
-}
-
 - (void)presentModalViewController:(UIViewController *)modalController {
     self.modalContentViewController = modalController;
     [self addChildViewController:self.modalContentViewController];
@@ -196,7 +157,6 @@ const CGFloat kMaxBackgroundScale = 1.7;
 }
 
 - (void)replaceContentWithView:(UIView *)newView {
-    [self initialiseViews];
     // set up an animation for the transition between the views
     CATransition *animation = [CATransition animation];
     [animation setDuration:0.5];
@@ -210,7 +170,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
     
     [self.contentContainer addSubview:newView];
     
-    // Add layout constraints to the view.
+    // Add autolayout.
     NSDictionary *views = NSDictionaryOfVariableBindings(newView);
     newView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.contentContainer addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-0-[newView]-0-|" options:0 metrics:nil views:views]];
@@ -222,7 +182,15 @@ const CGFloat kMaxBackgroundScale = 1.7;
 }
 
 - (void)replaceContentWithViewController:(UIViewController *)newController {
-    if ([self.contentViewController class] != [newController class]) {
+    Class currentClass = [self.contentViewController class];
+    Class newClass = [newController class];
+    
+    if (currentClass == [UINavigationController class] && newClass == [UINavigationController class]) {
+        currentClass = ((UINavigationController *)self.contentViewController).viewControllers[0];
+        newClass = ((UINavigationController *)newController).viewControllers[0];
+    }
+    
+    if (currentClass != newClass) {
         [self.contentViewController removeFromParentViewController];
         _contentViewController = newController;
         [self addChildViewController:newController];
@@ -263,13 +231,29 @@ const CGFloat kMaxBackgroundScale = 1.7;
     
 }
 
-
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {    
     if (touch.view.exclusiveTouch) {
         return NO;
     }
     
+    // Loop through the parents of the view.
+    UIView *view = touch.view;
+    
+    while (view && ![view isKindOfClass:[UITableViewCell class]]) {
+        view = view.superview;
+    }
+    
+    if ([view isKindOfClass:[UITableViewCell class]]) {
+        // Find out if the view supports editing.
+        return NO;
+    }
+    
     return YES;
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+    CGPoint translation = [(UIPanGestureRecognizer *)gestureRecognizer velocityInView:gestureRecognizer.view];
+    return fabs(translation.x) > fabs(translation.y);
 }
 
 
@@ -346,15 +330,6 @@ const CGFloat kMaxBackgroundScale = 1.7;
 
 - (void)contentTap:(UITapGestureRecognizer *)gr {
     [self hideMenuView:kSlideAnimationDuration];
-}
-
-- (UIView *)backgroundView {
-    if (!_backgroundView) {
-        _backgroundView = [[UIView alloc] initWithFrame:self.view.frame];
-        _backgroundView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
-    }
-    
-    return _backgroundView;
 }
 
 @end
