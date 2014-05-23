@@ -26,6 +26,30 @@
 
 #import <UIKit/UIKit.h>
 
+typedef NS_ENUM(NSUInteger, EMSideMenuType) {
+    kEMSideMenu3D,
+    kEmSideMenu2D
+};
+
+typedef enum {
+    kStateContent,
+    kStateMenu,
+    kStateAnimating
+} MenuState;
+
+@class EMSideMenu;
+
+@protocol EMSideMenuViewDelegate <NSObject>
+@optional
+- (void)menuViewDidOpen:(EMSideMenu *)sideMenu;
+- (void)menuViewWillOpen:(EMSideMenu *)sideMenu;
+- (void)menuViewAnimatingOpen:(EMSideMenu *)sideMenu;
+- (void)menuViewAnimatingClose:(EMSideMenu *)sideMenu;
+- (void)menuViewWillClose:(EMSideMenu *)sideMenu;
+- (void)menuViewDidClose:(EMSideMenu *)sideMenu;
+- (void)menuView:(EMSideMenu *)sideMenu isPanning:(CGFloat)panDelta;
+@end
+
 @interface EMSideMenu : UIViewController <UIGestureRecognizerDelegate>
 
 - (void)toggleMenu;
@@ -40,5 +64,11 @@
 @property (nonatomic, strong) IBOutlet UIView *contentContainer, *sideMenuContainer;
 @property (nonatomic, strong) IBOutlet UIView *contentView;
 @property (nonatomic, strong) IBOutlet UIView *backgroundView;
+@property (nonatomic, assign) EMSideMenuType type;
+@property (nonatomic, assign) MenuState state;
+@property (nonatomic, weak) id<EMSideMenuViewDelegate> menuDelegate;
+@property (nonatomic, assign) BOOL shadowOff;
+@property (nonatomic, assign) CGFloat shadowRadius, shadowOpacity;
+@property (nonatomic, assign) CGSize shadowOffset;
 
 @end

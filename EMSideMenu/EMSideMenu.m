@@ -25,34 +25,30 @@
 
 #import "EMSideMenu.h"
 
-typedef enum {
-    kStateContent,
-    kStateMenu,
-    kStateAnimating
-} MenuState;
-
 const NSTimeInterval kSlideAnimationDuration = 0.20;
 const CGFloat kMinScale = 0.61;
 const CGFloat kMaxScale = 1.00;
-const CGFloat kMaxXTranslation = 115;
+const CGFloat k3DMaxXTranslation = 115;
+const CGFloat k2DMaxXTranslation = 270;
 const CGFloat kMaxZTranslation = 10;
 const CGFloat kMaxDegrees = 32;
 const CGFloat kMaxSidebarScale = 2.5;
 const CGFloat kMaxBackgroundScale = 1.7;
 
 @interface EMSideMenu()
-@property (nonatomic, assign) MenuState state;
 @property (nonatomic, assign) CATransform3D contentOriginal, menuOpen, sideBarOpen, sideBarOriginal;
 @property (nonatomic, assign) CGPoint originalPoint;
 @property (nonatomic, assign) CGRect originFramePosition;
 @property (nonatomic, strong) UITapGestureRecognizer *tap;
 @property (nonatomic, assign) BOOL dragging;
+@property (nonatomic, assign) CGFloat maxXTranslation;
 @end
 
 @implementation EMSideMenu
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.type = self.type;
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(contentPan:)];
     pan.delegate = self;
     pan.cancelsTouchesInView = NO;
@@ -75,60 +71,56 @@ const CGFloat kMaxBackgroundScale = 1.7;
     self.sideBarOpen = sideBarOpen;
     
     self.contentContainer.clipsToBounds = YES;
-    self.sideMenuContainer.alpha = 0.0f;
 
     self.menuOpen = layerTransformation;
+    self.shadowOffset = CGSizeZero;
+    self.shadowRadius = 100.0f;
+    self.shadowOpacity = 3.0;
 }
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     [self.view layoutSubviews];
     
-    self.contentContainer.layer.shadowColor = [[UIColor blackColor] CGColor];
-    self.contentContainer.layer.shadowOffset = CGSizeMake(0, 0);
-    self.contentContainer.layer.shadowRadius = 100.0f;
-    self.contentContainer.layer.shadowOpacity = 3.0;
-    self.contentContainer.layer.masksToBounds = NO;
-    self.contentContainer.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.contentView.bounds].CGPath;
+    if (!self.shadowOff) {
+        self.contentContainer.layer.shadowColor = [[UIColor blackColor] CGColor];
+        self.contentContainer.layer.shadowOffset = self.shadowOffset;
+        self.contentContainer.layer.shadowRadius = self.shadowRadius;
+        self.contentContainer.layer.shadowOpacity = self.shadowOpacity;
+        self.contentContainer.layer.masksToBounds = NO;
+        self.contentContainer.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.contentView.bounds].CGPath;
+        
+        [self.view sendSubviewToBack:self.backgroundView];
+    }
     
-    [self.view sendSubviewToBack:self.backgroundView];
-    self.sideMenuContainer.layer.zPosition = -1000;
-    self.backgroundView.layer.zPosition = -1010;
+    if (self.type == kEMSideMenu3D) {
+        self.sideMenuContainer.layer.zPosition = -1000;
+        self.backgroundView.layer.zPosition = -1010;
+        self.sideMenuContainer.alpha = 0.0f;
+    }
     
     if (self.state == kStateMenu) {
         CGRect frame = self.originFramePosition;
-        frame.origin.x += kMaxXTranslation;
+        frame.origin.x += self.maxXTranslation;
         self.contentView.frame = frame;
     }
 }
 
-- (void)showMenuView:(NSTimeInterval)duration {
-    CALayer *layer = self.contentView.layer;
-    
-    self.state = kStateAnimating;
-    self.contentContainer.userInteractionEnabled = NO;
-
-    self.state = kStateMenu;
-    CGRect frame = self.originFramePosition;
-    frame.origin.x += kMaxXTranslation;
-    if (!self.dragging) {
-        self.sideMenuContainer.layer.transform = self.sideBarOpen;
+- (void)setType:(EMSideMenuType)type {
+    _type = type;
+    if (type == kEMSideMenu3D) {
+        self.maxXTranslation = k3DMaxXTranslation;
+    } else {
+        self.maxXTranslation = k2DMaxXTranslation;
     }
-    
-    [UIView animateWithDuration:duration
-                          delay:0.0
-                        options:0
-                     animations:^{
-                         layer.transform = self.menuOpen;
-                         self.contentView.frame = frame;
-                         self.sideMenuContainer.alpha = 1.0f;
-                         self.sideMenuContainer.layer.transform = CATransform3DIdentity;
-                     } completion:^(BOOL finished) {
-                         self.state = kStateMenu;
-                         [self.contentView addGestureRecognizer:self.tap];
-                         self.sideMenuContainer.layer.transform = CATransform3DIdentity;
-                     }];
-    
+}
+
+- (void)showMenuView:(NSTimeInterval)duration {
+    if (self.type == kEMSideMenu3D) {
+        [self open3DAnimation:duration];
+    } else {
+        [self open2DAnimation:duration];
+    }
 }
 
 - (void)toggleMenu {
@@ -163,10 +155,13 @@ const CGFloat kMaxBackgroundScale = 1.7;
     [animation setType:kCATransitionFade];
     [animation setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut]];
     [[self.contentContainer layer] addAnimation:animation forKey:@"SwitchToView1"];
-    
+    [self.contentViewController.view removeFromSuperview];
+    /*
     for (UIView *subview in self.contentContainer.subviews) {
-        [subview removeFromSuperview];
-    }
+        if (subview && [subview isKindOfClass:[UIView class]]) {
+            [subview removeFromSuperview];
+        }
+    }*/
     
     [self.contentContainer addSubview:newView];
     
@@ -186,15 +181,15 @@ const CGFloat kMaxBackgroundScale = 1.7;
     Class newClass = [newController class];
     
     if (currentClass == [UINavigationController class] && newClass == [UINavigationController class]) {
-        currentClass = ((UINavigationController *)self.contentViewController).viewControllers[0];
-        newClass = ((UINavigationController *)newController).viewControllers[0];
+        currentClass = [((UINavigationController *)self.contentViewController).viewControllers.firstObject class];
+        newClass = [((UINavigationController *)newController).viewControllers.firstObject class];
     }
-    
+
     if (currentClass != newClass) {
+        [self addChildViewController:newController];
+        [self replaceContentWithView:newController.view];
         [self.contentViewController removeFromParentViewController];
         _contentViewController = newController;
-        [self addChildViewController:newController];
-        [self replaceContentWithView:self.contentViewController.view];
     } else if (self.state == kStateMenu) {
         [self toggleMenu];
     }
@@ -205,30 +200,12 @@ const CGFloat kMaxBackgroundScale = 1.7;
 }
 
 - (void)hideMenuView:(NSTimeInterval)duration {
-    CALayer *layer = self.contentView.layer;
-    self.state = kStateAnimating;
-    CGRect frame = self.contentView.frame;
-    frame.origin.x -= kMaxXTranslation;
-    self.contentContainer.userInteractionEnabled = YES;
     
-    if (!self.dragging) {
-        self.sideMenuContainer.layer.transform = CATransform3DIdentity;
+    if (self.type == kEMSideMenu3D) {
+        [self close3DAnimation:duration];
+    } else {
+        [self close2DAnimation:duration];
     }
-    
-    [UIView animateWithDuration:duration
-                          delay:0.0
-                        options:0
-                     animations:^{
-                         layer.transform = CATransform3DIdentity;
-                         self.contentView.frame = self.originFramePosition;
-                         self.sideMenuContainer.alpha = 0;
-                         self.sideMenuContainer.layer.transform = self.sideBarOpen;
-                     } completion:^(BOOL finished) {
-                         self.state = kStateContent;
-                         [self.contentView removeGestureRecognizer:self.tap];
-                         self.sideMenuContainer.layer.transform = CATransform3DIdentity;
-                     }];
-    
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {    
@@ -239,12 +216,18 @@ const CGFloat kMaxBackgroundScale = 1.7;
     // Loop through the parents of the view.
     UIView *view = touch.view;
     
-    while (view && ![view isKindOfClass:[UITableViewCell class]]) {
-        view = view.superview;
+    UIView *tableViewCell = view;
+    while (tableViewCell && ![tableViewCell isKindOfClass:[UITableViewCell class]]) {
+        tableViewCell = tableViewCell.superview;
     }
     
-    if ([view isKindOfClass:[UITableViewCell class]]) {
+    if ([tableViewCell isKindOfClass:[UITableViewCell class]]) {
         // Find out if the view supports editing.
+        return NO;
+    }
+    
+    UIView *control = view;
+    if ([control isKindOfClass:[UIControl class]] && ![control isKindOfClass:[UIButton class]]) {
         return NO;
     }
     
@@ -274,41 +257,54 @@ const CGFloat kMaxBackgroundScale = 1.7;
         if (delta < 0.00) {
             delta = 0.00;
         }
-        CGFloat xTranslation = kMaxXTranslation * delta;
-        CGFloat zTranslation = kMaxZTranslation * delta;
-        CGFloat scale = kMaxScale - ((kMaxScale - kMinScale) * delta);
-        CGFloat degrees = 0 - ((0 - kMaxDegrees) * delta);
-        CGFloat menuAlpha = delta;
-        CGFloat sidebarScale = kMaxSidebarScale - ((kMaxSidebarScale - 1.0) * delta);
         
-        if (scale > kMaxScale) {
-            scale = kMaxScale;
+        if (self.type == kEMSideMenu3D) {
+            CGFloat xTranslation = self.maxXTranslation * delta;
+            CGFloat zTranslation = kMaxZTranslation * delta;
+            CGFloat scale = kMaxScale - ((kMaxScale - kMinScale) * delta);
+            CGFloat degrees = 0 - ((0 - kMaxDegrees) * delta);
+            CGFloat menuAlpha = delta;
+            CGFloat sidebarScale = kMaxSidebarScale - ((kMaxSidebarScale - 1.0) * delta);
+            
+            if (scale > kMaxScale) {
+                scale = kMaxScale;
+            }
+            
+            if (xTranslation > self.maxXTranslation) {
+                xTranslation = self.maxXTranslation;
+            }
+            
+            if (zTranslation > kMaxZTranslation) {
+                zTranslation = kMaxZTranslation;
+            }
+            
+            if (degrees > kMaxDegrees) {
+                degrees = kMaxDegrees;
+            }
+            
+            CATransform3D layerTransformation = CATransform3DIdentity;
+            layerTransformation.m34 = 1.0 / -500;
+            layerTransformation = CATransform3DRotate(layerTransformation, -degrees * M_PI / 180.0f, 0.0f, 1.0f, 0.0f);
+            layerTransformation = CATransform3DScale(layerTransformation, scale, scale, scale);
+            CGRect frame = self.originFramePosition;
+            frame.origin.x += xTranslation;
+            self.contentView.frame = frame;
+            CALayer *layer = self.contentView.layer;
+            layer.transform = layerTransformation;
+            self.sideMenuContainer.layer.transform = CATransform3DScale(CATransform3DIdentity, 2.5, 2.5, 1.0);
+            self.sideMenuContainer.layer.transform = CATransform3DScale(CATransform3DIdentity, sidebarScale, sidebarScale, 1.0);
+            self.sideMenuContainer.alpha = menuAlpha;
+        } else {
+            CGFloat xTranslation = self.maxXTranslation * delta;
+            CGRect frame = self.originFramePosition;
+            frame.origin.x += xTranslation;
+            self.contentView.frame = frame;
         }
         
-        if (xTranslation > kMaxXTranslation) {
-            xTranslation = kMaxXTranslation;
+        if (self.menuDelegate &&
+            [self.menuDelegate respondsToSelector:@selector(menuView:isPanning:)]) {
+            [self.menuDelegate menuView:self isPanning:delta];
         }
-        
-        if (zTranslation > kMaxZTranslation) {
-            zTranslation = kMaxZTranslation;
-        }
-        
-        if (degrees > kMaxDegrees) {
-            degrees = kMaxDegrees;
-        }
-        
-        CATransform3D layerTransformation = CATransform3DIdentity;
-        layerTransformation.m34 = 1.0 / -500;
-        layerTransformation = CATransform3DRotate(layerTransformation, -degrees * M_PI / 180.0f, 0.0f, 1.0f, 0.0f);
-        layerTransformation = CATransform3DScale(layerTransformation, scale, scale, scale);
-        CGRect frame = self.originFramePosition;
-        frame.origin.x += xTranslation;
-        self.contentView.frame = frame;
-        CALayer *layer = self.contentView.layer;
-        layer.transform = layerTransformation;
-        self.sideMenuContainer.layer.transform = CATransform3DScale(CATransform3DIdentity, 2.5, 2.5, 1.0);
-        self.sideMenuContainer.layer.transform = CATransform3DScale(CATransform3DIdentity, sidebarScale, sidebarScale, 1.0);
-        self.sideMenuContainer.alpha = menuAlpha;
     }
     
     if (gr.state == UIGestureRecognizerStateEnded) {
@@ -330,6 +326,121 @@ const CGFloat kMaxBackgroundScale = 1.7;
 
 - (void)contentTap:(UITapGestureRecognizer *)gr {
     [self hideMenuView:kSlideAnimationDuration];
+}
+
+#pragma mark - Animations
+
+- (void)open3DAnimation:(NSTimeInterval)duration {
+    if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewWillOpen:)]) {
+        [self.menuDelegate menuViewWillOpen:self];
+    }
+    CALayer *layer = self.contentView.layer;
+    
+    self.state = kStateAnimating;
+    self.contentContainer.userInteractionEnabled = NO;
+    
+    CGRect frame = self.originFramePosition;
+    frame.origin.x += self.maxXTranslation;
+    if (!self.dragging) {
+        self.sideMenuContainer.layer.transform = self.sideBarOpen;
+    }
+    
+    [UIView animateWithDuration:duration
+                          delay:0.0
+                        options:0
+                     animations:^{
+                         layer.transform = self.menuOpen;
+                         self.contentView.frame = frame;
+                         self.sideMenuContainer.alpha = 1.0f;
+                         self.sideMenuContainer.layer.transform = CATransform3DIdentity;
+                     } completion:^(BOOL finished) {
+                         self.state = kStateMenu;
+                         [self.contentView addGestureRecognizer:self.tap];
+                         self.sideMenuContainer.layer.transform = CATransform3DIdentity;
+                     }];
+}
+
+- (void)close3DAnimation:(NSTimeInterval)duration {
+    if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewWillClose:)]) {
+        [self.menuDelegate menuViewWillClose:self];
+    }
+    CALayer *layer = self.contentView.layer;
+    self.state = kStateAnimating;
+    CGRect frame = self.contentView.frame;
+    frame.origin.x -= self.maxXTranslation;
+    self.contentContainer.userInteractionEnabled = YES;
+    
+    if (!self.dragging) {
+        self.sideMenuContainer.layer.transform = CATransform3DIdentity;
+    }
+    
+    [UIView animateWithDuration:duration
+                          delay:0.0
+                        options:0
+                     animations:^{
+                         if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewAnimatingOpen:)]) {
+                             [self.menuDelegate menuViewAnimatingOpen:self];
+                         }
+                         layer.transform = CATransform3DIdentity;
+                         self.contentView.frame = self.originFramePosition;
+                         self.sideMenuContainer.alpha = 0;
+                         self.sideMenuContainer.layer.transform = self.sideBarOpen;
+                     } completion:^(BOOL finished) {
+                         self.state = kStateContent;
+                         [self.contentView removeGestureRecognizer:self.tap];
+                         self.sideMenuContainer.layer.transform = CATransform3DIdentity;
+                     }];
+}
+
+- (void)open2DAnimation:(NSTimeInterval)duration {
+    if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewWillOpen:)]) {
+        [self.menuDelegate menuViewWillOpen:self];
+    }
+    self.state = kStateAnimating;
+    self.contentContainer.userInteractionEnabled = NO;
+    
+    CGRect frame = self.originFramePosition;
+    frame.origin.x += self.maxXTranslation;
+    
+    [UIView animateWithDuration:duration
+                          delay:0.0
+                        options:0
+                     animations:^{
+                         if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewAnimatingOpen:)]) {
+                             [self.menuDelegate menuViewAnimatingOpen:self];
+                         }
+                         self.contentView.frame = frame;
+                         self.sideMenuContainer.alpha = 1.0f;
+                     } completion:^(BOOL finished) {
+                         self.state = kStateMenu;
+                         [self.contentView addGestureRecognizer:self.tap];
+                     }];
+}
+
+- (void)close2DAnimation:(NSTimeInterval)duration {
+    if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewWillClose:)]) {
+        [self.menuDelegate menuViewWillClose:self];
+    }
+    self.state = kStateAnimating;
+    CGRect frame = self.contentView.frame;
+    frame.origin.x -= self.maxXTranslation;
+    self.contentContainer.userInteractionEnabled = YES;
+    
+    [UIView animateWithDuration:duration
+                          delay:0.0
+                        options:0
+                     animations:^{
+                         if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewAnimatingClose:)]) {
+                             [self.menuDelegate menuViewAnimatingClose:self];
+                         }
+                         self.contentView.frame = self.originFramePosition;
+                     } completion:^(BOOL finished) {
+                         self.state = kStateContent;
+                         [self.contentView removeGestureRecognizer:self.tap];
+                         if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewDidClose:)]) {
+                             [self.menuDelegate menuViewDidClose:self];
+                         }
+                     }];
 }
 
 @end
