@@ -30,6 +30,7 @@ const CGFloat kMinScale = 0.61;
 const CGFloat kMaxScale = 1.00;
 const CGFloat k3DMaxXTranslation = 115;
 const CGFloat k2DMaxXTranslation = 270;
+const CGFloat k2DMaxXRightTranslation = -220;
 const CGFloat kMaxZTranslation = 10;
 const CGFloat kMaxDegrees = 32;
 const CGFloat kMaxSidebarScale = 2.5;
@@ -49,6 +50,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.type = self.type;
+    self.rightMenuContainer.hidden = YES;
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(contentPan:)];
     pan.delegate = self;
     pan.cancelsTouchesInView = NO;
@@ -123,6 +125,15 @@ const CGFloat kMaxBackgroundScale = 1.7;
     }
 }
 
+- (void)showRightMenuView:(NSTimeInterval)duration {
+    self.rightMenuContainer.hidden = NO;
+    if (self.type == kEMSideMenu3D) {
+        [self open2DRightAnimation:duration];
+    } else {
+        [self open2DRightAnimation:duration];
+    }
+}
+
 - (void)toggleMenu {
     switch (self.state) {
         case kStateContent:
@@ -134,6 +145,40 @@ const CGFloat kMaxBackgroundScale = 1.7;
         default:
             break;
     }
+}
+
+- (void)toggleRightMenu {
+    if (self.rightMenuViewController) {
+        switch (self.state) {
+            case kStateRightMenu:
+                [self hideMenuView:kSlideAnimationDuration];
+                break;
+            case kStateContent:
+                [self showRightMenuView:kSlideAnimationDuration];
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+- (void)setRightMenuViewController:(UIViewController *)rightMenuViewController {
+    UIViewController *rvc = _rightMenuViewController;
+    [rvc.view removeFromSuperview];
+    [rvc removeFromParentViewController];
+    
+    _rightMenuViewController = rightMenuViewController;
+    if (rightMenuViewController) {
+        [self.rightMenuContainer addSubview:self.rightMenuViewController.view];
+        UIView *newView = self.rightMenuViewController.view;
+        NSDictionary *views = NSDictionaryOfVariableBindings(newView);
+        newView.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.rightMenuContainer addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-0-[newView]-0-|" options:0 metrics:nil views:views]];
+        [self.rightMenuContainer addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-0-[newView]-0-|" options:0 metrics:nil views:views]];
+    } else {
+        self.rightMenuContainer.hidden = YES;
+    }
+    
 }
 
 - (void)presentModalViewController:(UIViewController *)modalController {
@@ -156,13 +201,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
     [animation setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut]];
     [[self.contentContainer layer] addAnimation:animation forKey:@"SwitchToView1"];
     [self.contentViewController.view removeFromSuperview];
-    /*
-    for (UIView *subview in self.contentContainer.subviews) {
-        if (subview && [subview isKindOfClass:[UIView class]]) {
-            [subview removeFromSuperview];
-        }
-    }*/
-    
+
     [self.contentContainer addSubview:newView];
     
     // Add autolayout.
@@ -241,6 +280,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
 
 
 - (void)contentPan:(UIPanGestureRecognizer *)gr {
+    if (self.state == kStateRightMenu) return;
     CGPoint point = [gr translationInView:self.view];
     
     if (gr.state == UIGestureRecognizerStateBegan) {
@@ -417,6 +457,25 @@ const CGFloat kMaxBackgroundScale = 1.7;
                      }];
 }
 
+- (void)open2DRightAnimation:(NSTimeInterval)duration {
+    self.state = kStateAnimating;
+    self.contentContainer.userInteractionEnabled = NO;
+    
+    CGRect frame = self.originFramePosition;
+    frame.origin.x += k2DMaxXRightTranslation;
+    
+    [UIView animateWithDuration:duration
+                          delay:0.0
+                        options:0
+                     animations:^{
+                         self.contentView.frame = frame;
+                     } completion:^(BOOL finished) {
+                         self.state = kStateRightMenu;
+                         [self.contentView addGestureRecognizer:self.tap];
+                     }];
+
+}
+
 - (void)close2DAnimation:(NSTimeInterval)duration {
     if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewWillClose:)]) {
         [self.menuDelegate menuViewWillClose:self];
@@ -440,6 +499,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
                          if (self.menuDelegate && [self.menuDelegate respondsToSelector:@selector(menuViewDidClose:)]) {
                              [self.menuDelegate menuViewDidClose:self];
                          }
+                         self.rightMenuContainer.hidden = YES;
                      }];
 }
 

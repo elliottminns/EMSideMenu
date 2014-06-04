@@ -34,7 +34,8 @@ typedef NS_ENUM(NSUInteger, EMSideMenuType) {
 typedef enum {
     kStateContent,
     kStateMenu,
-    kStateAnimating
+    kStateAnimating,
+    kStateRightMenu
 } MenuState;
 
 @class EMSideMenu;
@@ -53,15 +54,17 @@ typedef enum {
 @interface EMSideMenu : UIViewController <UIGestureRecognizerDelegate>
 
 - (void)toggleMenu;
+- (void)toggleRightMenu;
 - (void)replaceContentWithViewController:(UIViewController *)newController;
 - (void)replaceContentWithView:(UIView *)newView;
 - (void)presentModalViewController:(UIViewController *)modalController;
 - (void)dismissModalViewController;
 
 @property (nonatomic, strong, setter = replaceContentWithViewController:) UIViewController *contentViewController;
-@property (nonatomic, strong) UIViewController *menuViewController;
+@property (nonatomic, strong) UIViewController *menuViewController, *rightMenuViewController;
 @property (nonatomic, strong) UIViewController *modalContentViewController;
 @property (nonatomic, strong) IBOutlet UIView *contentContainer, *sideMenuContainer;
+@property (nonatomic, strong) IBOutlet UIView *rightMenuContainer;
 @property (nonatomic, strong) IBOutlet UIView *contentView;
 @property (nonatomic, strong) IBOutlet UIView *backgroundView;
 @property (nonatomic, assign) EMSideMenuType type;
