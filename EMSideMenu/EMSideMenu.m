@@ -219,6 +219,10 @@ const CGFloat kMaxBackgroundScale = 1.7;
     Class currentClass = [self.contentViewController class];
     Class newClass = [newController class];
     
+    if (self.rightMenuViewController && self.state == kStateRightMenu) {
+        [self toggleRightMenu];
+    }
+    
     if (currentClass == [UINavigationController class] && newClass == [UINavigationController class]) {
         currentClass = [((UINavigationController *)self.contentViewController).viewControllers.firstObject class];
         newClass = [((UINavigationController *)newController).viewControllers.firstObject class];
