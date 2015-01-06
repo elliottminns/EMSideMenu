@@ -43,6 +43,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
 @property (nonatomic, strong) UITapGestureRecognizer *tap;
 @property (nonatomic, assign) BOOL dragging;
 @property (nonatomic, assign) CGFloat maxXTranslation;
+@property (nonatomic, assign) BOOL disabled;
 @end
 
 @implementation EMSideMenu
@@ -78,6 +79,10 @@ const CGFloat kMaxBackgroundScale = 1.7;
     self.shadowOffset = CGSizeZero;
     self.shadowRadius = 100.0f;
     self.shadowOpacity = 3.0;
+}
+
+- (void)disableMenuForCurrentController {
+    self.disabled = YES;
 }
 
 - (void)viewDidLayoutSubviews {
@@ -218,12 +223,14 @@ const CGFloat kMaxBackgroundScale = 1.7;
 - (void)replaceContentWithViewController:(UIViewController *)newController {
     Class currentClass = [self.contentViewController class];
     Class newClass = [newController class];
+    self.disabled = NO;
     
     if (self.rightMenuViewController && self.state == kStateRightMenu) {
         [self toggleRightMenu];
     }
     
-    if (currentClass == [UINavigationController class] && newClass == [UINavigationController class]) {
+    if ([self.contentViewController isKindOfClass:[UINavigationController class]] &&
+        [newController isKindOfClass:[UINavigationController class]]) {
         currentClass = [((UINavigationController *)self.contentViewController).viewControllers.firstObject class];
         newClass = [((UINavigationController *)newController).viewControllers.firstObject class];
     }
@@ -252,7 +259,7 @@ const CGFloat kMaxBackgroundScale = 1.7;
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {    
-    if (touch.view.exclusiveTouch) {
+    if (touch.view.exclusiveTouch || self.disabled) {
         return NO;
     }
     

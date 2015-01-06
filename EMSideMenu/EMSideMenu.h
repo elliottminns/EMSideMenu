@@ -59,6 +59,7 @@ typedef enum {
 - (void)replaceContentWithView:(UIView *)newView;
 - (void)presentModalViewController:(UIViewController *)modalController;
 - (void)dismissModalViewController;
+- (void)disableMenuForCurrentController;
 
 @property (nonatomic, strong, setter = replaceContentWithViewController:) UIViewController *contentViewController;
 @property (nonatomic, strong) UIViewController *menuViewController, *rightMenuViewController;
